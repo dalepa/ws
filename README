@@ -1,0 +1,71 @@
+mkdir -p /ws/grafana /ws/images/Cam2
+
+yum update
+yum install docker
+systemctl start docker
+yum install nc
+yum install wget
+yum install ImageMagick
+yum install httpd
+yum install perl
+yum install net-tools.x86_64
+
+wget https://dl.grafana.com/oss/release/grafana-6.2.3-1.x86_64.rpm
+yum localinstall grafana-6.2.3-1.x86_64.rpm
+service grafana-server start
+
+
+start-graphite
+
+firewall-cmd --add-port=3000/tcp --permanent
+firewall-cmd --add-port=81/tcp --permanent
+firewall-cmd --add-port=80/tcp --permanent
+firewall-cmd --add-port=8086/tcp --permanent
+
+firewall-cmd --reload
+cd /var/www/html ; ln -s /ws/images
+
+on source: 
+	docker cp GRAPHITEIMAGE:/opt/graphite/storage/whisper/wu .
+        tar cvf wu.tar wu
+on destination
+	docker cp wu GRAPHITEIMAGE:/opt/graphite/storage/whisper
+	docker cp storage-schemas.conf GRAPHITEIMAGE:/opt/graphite/conf
+
+
+
+#/usr/sbin/setsebool -P httpd_can_network_connect 1
+
+ADD TO /etc/httpd/conf/httpd.conf
+<VirtualHost *:80>
+
+    ServerName 127.0.0.1
+    ProxyPass /images  http://192.168.1.143:8888/images
+    ProxyPassReverse /images http://192.168.1.143:8888/images
+
+</VirtualHost>
+
+LoadModule proxy_module modules/mod_proxy.so
+LoadModule proxy_http_module modules/mod_proxy_http.so
+
+
+apachectl start
+
+
+setenforce 0
+
+
+
+INFLUX
+
+
+  wget https://dl.influxdata.com/influxdb/releases/influxdb-1.7.6.x86_64.rpm
+  sudo yum localinstall influxdb-1.7.6.x86_64.rpm
+  influx
+  service influxdb start
+  influx
+
+	 create database "SmartThings"
+ 	create user "grafana" with password 'grafana'
+ 	exit
+

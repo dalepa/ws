@@ -1,0 +1,31 @@
+#init docker volume create influxdb_data
+
+docker run -d \
+--name="influxdb" \
+--restart on-failure \
+-v influxdb_data:/var/lib/influxdb \
+influxdb -config /etc/influxdb/influxdb.conf
+
+docker exec -it influxdb /bin/bash
+
+influx
+CREATE DATABASE  SmartThings
+CREATE USER grafite WITH PASSWORD 'grafite' WITH ALL PRIVILEGES
+exit
+
+
+
+docker exec -it influxdb /bin/bash
+influx
+USE SmartThings
+SHOW SERIES
+
+
+
+#docker run --rm \
+#      -e INFLUXDB_DB=SmartThings -e INFLUXDB_ADMIN_ENABLED=true \
+#      -e INFLUXDB_ADMIN_USER=admin -e INFLUXDB_ADMIN_PASSWORD=wasper2k \
+#      -e INFLUXDB_USER=grafana -e INFLUXDB_USER_PASSWORD=grafana \
+#      -v $PWD:/var/lib/influxdb \
+#      influxdb /init-influxdb.sh
+

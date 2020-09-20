@@ -1,0 +1,3 @@
+service docker start
+
+/ws/start-agents

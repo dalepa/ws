@@ -1,0 +1,4 @@
+#find ./ -type f -name '*.wsp' -exec whisper-resize.py --nobackup {} 10s:180d 10m:1y \;
+find ./ -type f -name '*.wsp' -exec /opt/graphite/bin/whisper-resize.py --nobackup {} 10s:30d 1m:1y  \;
+
+

@@ -1,0 +1,84 @@
+#!/usr/bin/perl
+#
+# Measure response time to fetch a web page, with and without proxy
+# Set up for Raul Rodriguez, 7/14/2015, to measure internet response
+#
+# timings are each from start to end of metric (in seconds), rather 
+# than individual segments
+#
+use Sys::Hostname;
+use POSIX 'strftime';
+
+#my $graphite_server = "104.198.42.119";
+#my $graphite_server = "localhost";
+#my $graphite_server = "ec2-52-15-144-200.us-east-2.compute.amazonaws.com";
+my $graphite_server = "hot3";
+my $host = hostname();
+$host =~ s/\..*//;
+
+
+my $houstonproxy = "http://ushoudc-ipxy1.corp.amvescap.net:6080";
+my $dallasproxy = "http://10.217.250.15:6080";
+my $userinfo = "USER:PASSWORD";
+
+
+my $cam = "Cam2";
+
+
+my %URLS = ('Cam2' => 'http://bay.pancamo.com:8080/image/Cam2', 'Cam10' => 'http://bay.pancamo.com:8080/image/Cam10', 'Cam12' => 'http://bay.pancamo.com:8080/image/Cam12', 'Cam7' => 'http://bay.pancamo.com:8080/image/Cam7' );
+
+###  TREE DESIGN 2.0: service.internet.benchmark.type.sourcehosanamet.desthostname.proxyname.metric
+###  example:  service.internet.benchmark.{HTTP|FTP|ETC}.$sourcehosanamet.$desthostname.{houston|dallas|none}.$metric
+
+### Cycle through 
+while (1) {
+    my $cycle_start = time();
+
+    printf "agent1 polling start $cycle_start \n";
+
+    $minute = strftime '%M%S', localtime;
+
+
+  foreach $URL_key (keys %URLS) {
+    my $graphiteservice="service.internet.benchmark.$host.$URL_key";
+
+	
+    printf "getting %s\n", $URL_key;
+
+    foreach $proxy ("none") {
+        my $timestamp=time();
+
+        my @lines = `curl $proxy_params -k -s -o /ws/images/$URL_key/$URL_key.$minute.jpg  -m 20 -w "http_code: %{http_code}\nnamelookup: %{time_namelookup}\nconnect: %{time_connect}\nstarttransfer: %{time_starttransfer}\ntotal: %{time_total}\nsize_download: %{size_download}\nspeed_download: %{speed_download}\n" $URLS{$URL_key}`;
+
+    
+        my %metrics=();
+        foreach (@lines) {
+	    chomp($_);
+	    $_ =~ /^([^\:]+): (.*)/;
+	    $metrics{$1}=$2;
+        }
+
+        if ($metrics{"http_code"} == 200) {
+            foreach $metric ("namelookup","connect","starttransfer","total","size_download","speed_download") {
+	        my $graphite_string = $graphiteservice.".$proxy.$metric ".$metrics{$metric}." $timestamp";
+	       printf "/bin/echo  $graphite_string \n";
+	       system ("/bin/echo  $graphite_string | nc  $graphite_server 2003");
+	    }
+        }
+	else {
+	       printf "ERROR: " ,$metrics{"http_code"}, " \n";
+	}	
+    
+    }
+  }
+
+    my $cycle_end = time();
+    my $sleep_time = 120 - ($cycle_end - $cycle_start);
+
+    printf "agent1 polling end sleeping  60 $cycle_end \n";
+
+    #sleep $sleep_time;
+    sleep 60;
+}
+
+__END__

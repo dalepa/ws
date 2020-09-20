@@ -1,0 +1,18 @@
+while true; do
+	DATE=`date +%Y%m%d`
+        HOUR=`date +%H`
+
+	echo "cam2gif starting:" `date`
+
+        HOURDIR="/ws/images/Cam2/$HOUR"
+        mkdir -p $HOURDIR
+	cp /ws/images/Cam2.gif $HOURDIR/Cam2.$DATE.gif
+	ln -sf $HOURDIR/Cam2.$DATE.gif $HOURDIR/Cam2.$HOUR.gif
+
+	files=`ls -rt /ws/images/Cam2/*.jpg|tail -359 `
+	#time convert   -limit memory 64MiB  -limit map 128MiB   -delay 7 -scale 30% -size 20%  -loop 0 $files /ws/images/Cam2.gif
+	env MAGICK_TMPDIR=/ws/tmp convert  -delay 2 -scale 50%  -loop 0 $files /ws/images/Cam2.gif
+	echo "cam2gif complete: " `date`
+        echo "cam2gif file: " `ls -hl  /ws/images/Cam2.gif`
+	sleep 2400
+done

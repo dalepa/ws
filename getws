@@ -1,0 +1,177 @@
+#!/bin/bash
+# whoami:  	Dan Pancamo
+# date: 	9/5/2016
+# name: ws1400ip
+# Tested with ws-1400-ip  Version 3
+#
+# Summary
+# 1. wget from your Ambiant weather controller
+# 2. parse out the data
+# 3. post to graphite
+
+# First git upload, please forgive...
+
+
+GRAPHITE="hot3"
+myws=KTXOLIVI
+
+while true; do
+
+	echo "getws polling start :" `date` 
+	rm livedata.htm  file file2
+
+#1
+	wget -T 5 -q http://bay.pancamo.com:5000/livedata.htm
+#2
+	inTemp=`grep inTemp livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	outTemp=`grep outTemp livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	avgwind=`grep avgwind livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	gustspeed=`grep gustspeed livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	dailygust=`grep dailygust livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	windir=`grep windir livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	solarrad=`grep solarrad livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	uvi=`grep uvi livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	rainofhourly=`grep rainofhourly livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	rainofdaily=`grep rainofdaily livedata.htm | awk '{print $8}'|awk -F\" '{ print $2}'`
+	inHumi=`grep inHumi livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	outHumi=`grep outHumi livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	AbsPress=`grep AbsPress livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	RelPress=`grep RelPress livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+	PM25=`grep pm25 livedata.htm | awk '{print $9}'|awk -F\" '{ print $2}'`
+
+	echo "PM25= " $PM25
+
+
+	BOBHALLPIER="8775870"
+	SARGENT="8772985"
+	ROCKPORT="8774770"
+	ARANSASPASS="8775237"
+	CORPUSLEX="8775296"
+ 	PORTLAVACA="8773259"
+ 	PORTOCONNER="8773701"
+	DATE=`date +%Y%m%d`
+
+echo "PORTOCONNER WATER LEVEL"
+#PORTOCONNER
+
+	echo $DATE $PORTOCONNER 
+
+	curl -s -o ws2.out "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_level&application=NOS.COOPS.TAC.WL&begin_date="$DATE"&end_date="$DATE"&datum=MLLW&station="$PORTOCONNER"&time_zone=GMT&units=english&format=xml"
+
+	PORTOCONNERWaterLevel2=`grep wl ws2.out |tail -1|awk -F\" '{print $4}'`
+        echo "PORTOCONNERWaterLevel2= " $PORTOCONNERWaterLevel2
+
+
+	curl -s -o file2  "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?begin_date="$DATE"&end_date="$DATE"&station="$PORTOCONNER"&product=water_level&datum=MTL&units=english&time_zone=gmt&application=ports_screen&format=xml"
+
+	PORTOCONNERWaterMTL=`grep wl file2|tail -1|awk -F\" '{print $4}'`
+
+	echo "PORTOCONNERWaterMTL=" $PORTOCONNERWaterMTL
+
+
+echo "PORTOCONNER WATER TEMP"
+#GET WATER TEMP
+	#curl -s -o file2  "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?begin_date="$DATE"&end_date="$DATE"&station="$PORTOCONNER"&product=water_temperature&units=english&time_zone=gmt&application=ports_screen&format=xml"
+	#PORTOCONNERWaterTemp=`grep wt file2|tail -1|awk -F\" '{print $4}'|sed 's/\r//g'`
+
+
+	#WIND
+	curl -s -o ws2.out "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=wind&begin_date="$DATE"&end_date="$DATE"&datum=MLLW&station="$PORTOCONNER"&time_zone=GMT&units=english&format=xml"
+	PORTOCONNERwindgusts=`grep ws ws2.out |tail -1|awk -F\" '{print $10}'`
+echo "PORTOCONNERwindgusts = " $PORTOCONNERwindgusts
+	echo "PORTOCONNERwindgusts= " $PORTOCONNERwindgusts
+
+
+echo "PORTLAVACA "
+#PORTLAVACA
+
+        curl -s -o ws2.out "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=water_level&application=NOS.COOPS.TAC.WL&begin_date="$DATE"&end_date="$DATE"&datum=MLLW&station="$PORTLAVACA"&time_zone=GMT&units=english&format=xml"
+        PORTLAVACAWaterLevel2=`grep wl ws2.out |tail -1|awk -F\" '{print $4}'`
+
+	echo "PORTLAVACAWaterLevel2=" $PORTLAVACAWaterLevel2
+
+        curl -s -o file2  "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?begin_date="$DATE"&end_date="$DATE"&station="$PORTLAVACA"&product=water_level&datum=MTL&units=english&time_zone=gmt&application=ports_screen&format=xml"
+        PORTLAVACAWaterMTL=`grep wl file2|tail -1|awk -F\" '{print $4}'`
+
+	echo "PORTLAVACAWaterMTL= " $PORTLAVACAWaterMTL
+
+
+	#curl -s -o file2  "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?begin_date="$DATE"&end_date="$DATE"&station="$PORTLAVACA"&product=water_temperature&units=english&time_zone=gmt&application=ports_screen&format=xml"
+	#PORTLAVACAWaterTemp=`grep wt file2|tail -1|awk -F\" '{print $4}'|sed 's/\r//g'`
+	#echo "PORTLAVACAWaterTemp= " $PORTLAVACAWaterTemp
+
+	#WIND
+	curl -s -o ws2.out "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?product=wind&begin_date="$DATE"&end_date="$DATE"&datum=MLLW&station="$PORTLAVACA"&time_zone=GMT&units=english&format=xml"
+	PORTLAVACAwindgusts=`grep ws ws2.out |tail -1|awk -F\" '{print $10}'`
+	PORTLAVACAwinddegrees=`grep ws ws2.out |tail -1|awk -F\" '{print $6}'`
+
+        echo "PORTLAVACAwindgusts= " $PORTLAVACAwindgusts
+
+
+
+
+#PING TIME
+	PintTime=`ping -c 3 bay.pancamo.com|grep rtt|awk -F/ '{print $5}'`
+
+
+	echo "getws polling done :" `date` 
+
+
+	mydate=`date +%s`
+
+	echo "wu.$myws.inTemp $inTemp $mydate" > junk
+	echo "wu.$myws.outTemp $outTemp  $mydate" >> junk
+	echo "wu.$myws.avgwind $avgwind  $mydate" >> junk
+	echo "wu.$myws.gustspeed $gustspeed  $mydate" >> junk
+	echo "wu.$myws.dailygust $dailygust  $mydate" >> junk
+	echo "wu.$myws.windir $windir  $mydate" >> junk
+	echo "wu.$myws.solarrad $solarrad  $mydate" >> junk
+	echo "wu.$myws.uvi $uvi  $mydate" >> junk
+	echo "wu.$myws.rainofhourly $rainofhourly  $mydate" >> junk
+	echo "wu.$myws.rainofdaily $rainofdaily  $mydate" >> junk
+	echo "wu.$myws.inHumi $inHumi  $mydate" >> junk
+	echo "wu.$myws.outHumi $outHumi  $mydate" >> junk
+	echo "wu.$myws.AbsPress $AbsPress  $mydate" >> junk
+	echo "wu.$myws.RelPress $RelPress  $mydate" >> junk
+	echo "wu.$myws.PM25 $PM25  $mydate" >> junk
+	echo "wu.$myws.gcoos.WaterLevel $WaterLevel $mydate" >> junk
+
+	echo "wu.$myws.noaa.portoconner.WaterLevel2 $PORTOCONNERWaterLevel2 $mydate" >> junk
+	echo "wu.$myws.noaa.portoconner.WaterMTL $PORTOCONNERWaterMTL $mydate" >> junk
+	#echo "wu.$myws.noaa.portoconner.WaterTemp $PORTOCONNERWaterTemp $mydate" >> junk
+        echo "wu.$myws.noaa.portoconner.wind.gusts $PORTOCONNERwindgusts $mydate" >> junk
+
+	echo "wu.$myws.noaa.portlavaca.WaterLevel2 $PORTLAVACAWaterLevel2 $mydate" >> junk
+	echo "wu.$myws.noaa.portlavaca.WaterMTL $PORTLAVACAWaterMTL $mydate" >> junk
+	# echo "wu.$myws.noaa.portlavaca.WaterTemp $PORTLAVACAWaterTemp $mydate" >> junk
+        echo "wu.$myws.noaa.portlavaca.wind.gusts $PORTLAVACAwindgusts $mydate" >> junk
+        echo "wu.$myws.noaa.portlavaca.wind.dir $PORTLAVACAwinddegrees $mydate" >> junk
+
+#        echo "wu.$myws.noaa.corpuslex.WaterLevel2 $CORPUSLEXWaterLevel2 $mydate" >> junk
+#        echo "wu.$myws.noaa.corpuslex.wind.gusts $CORPUSLEXwindgusts $mydate" >> junk
+#
+#        echo "wu.$myws.noaa.aransaspass.WaterLevel2 $ARANSASPASSWaterLevel2 $mydate" >> junk
+#        echo "wu.$myws.noaa.aransaspass.wind.gusts $ARANSASPASSwindgusts $mydate" >> junk
+#
+#        echo "wu.$myws.noaa.rockport.WaterLevel2 $ROCKPORTWaterLevel2 $mydate" >> junk
+#        echo "wu.$myws.noaa.rockport.wind.gusts $ROCKPORTwindgusts $mydate" >> junk
+#
+#        echo "wu.$myws.noaa.sargent.WaterLevel2 $SARGENTWaterLevel2 $mydate" >> junk
+#        echo "wu.$myws.noaa.bobhallpier.wind.gusts $BOBHALLPIERwindgusts $mydate" >> junk
+
+
+	echo "wu.$myws.PingTime $PintTime $mydate" >> junk
+
+#	cat junk 
+#3
+#	cat junk | nc 104.198.42.119 2003
+	#cat junk | nc 192.168.1.77 2003
+	cat junk | nc $GRAPHITE 2003
+
+	cat junk
+
+	echo "getws update aws done :" `date` 
+	sleep 60
+
+done
+
